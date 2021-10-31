@@ -1,9 +1,8 @@
 import 'dart:developer';
 
-import 'package:bookstore/models/book.dart';
+import 'package:bookstore/clients/book_client.dart';
 import 'package:bookstore/pages/book_page.dart';
 import 'package:bookstore/providers/book_providers.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,25 +48,25 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
               ),
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: books.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return ListTile(
-                    leading: Image.network(books[index].image, height: 50),
-                    title: Text(books[index].title),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BookPage(
-                            isbn13: books[index].isbn13,
-                            isbn10: books[index].isbn10,
+              child: ListView(
+                children: [
+                  for (final book in books)
+                    ListTile(
+                      leading: Image.network(book.image, height: 50),
+                      title: Text(book.title),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BookPage(
+                              isbn13: book.isbn13,
+                              isbn10: book.isbn10,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                },
+                        );
+                      },
+                    ),
+                ],
               ),
             ),
           ],
@@ -79,10 +78,7 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
   Future<void> _loadBooks() async {
     try {
       log('Loading books ...');
-      final res =
-          await Dio().get('https://api.itbook.store/1.0/search/mongodb');
-      final books =
-          res.data?['books'].map<Book>((e) => Book.fromJson(e)).toList();
+      final books = await fetchBooks();
       if (books != null) {
         ref.read(booksProvider.notifier).addAll(books);
       }
